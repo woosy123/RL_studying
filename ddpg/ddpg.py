@@ -53,8 +53,8 @@ def obs2state(state_list):
     return torch.FloatTensor(state_list).view(1, -1)
 
 class DDPG:
-    def __init__(self):
-        # self.env = env
+    def __init__(self, env):
+        self.env = env
         self.stateDim = NUM_STATES
         self.actionDim = NUM_ACTIONS
         self.actor = Actor(self.stateDim, self.actionDim)
@@ -124,42 +124,12 @@ class DDPG:
         avg_rewards = []
         # for each episode 
         for episode in range(self.start, self.end):
-            # state = self.env.new_reset(ID)
-            self.curr_arrival_rate = random.uniform(0.0, 1.0)
-            self.cpu_limit = 1 # state.limit.cpu
-            self.mem_limit = 1 # state.limit.memory
-            self.llc_limit = 1 # state.limit.llc
-            self.io_limit = 1 # state.limit.io
-            self.net_limit = 1 # state.limit.network
-            self.curr_cpu_util = random.randint(0,1) # state.usage.cpu
-            self.curr_mem_util = random.randint(0,1) # state.usage.memory
-            self.curr_llc_util = random.randint(0,1) # state.usage.llc
-            self.curr_io_util = random.randint(0,1) # state.usage.io
-            self.curr_net_util = random.randint(0,1) # state.usage.network
-            self.slo_retainment = random.randint(0,1) # state.other.slo_retainment
-            self.rate_ratio = random.randint(1,3) # state.other.rate_ratio
-            self.percentages = [random.randint(1,3),random.randint(1,3), random.randint(1,3)] # state.other.percentages
-            state = {
-            'curr_arrival_rate': self.curr_arrival_rate,
-            'cpu_limit': self.cpu_limit,
-            'mem_limit': self.mem_limit,
-            'llc_limit': self.llc_limit,
-            'io_limit': self.io_limit,
-            'net_limit': self.net_limit,
-            'curr_cpu_util': self.curr_cpu_util,
-            'curr_mem_util': self.curr_mem_util,
-            'curr_llc_util': self.curr_llc_util,
-            'curr_io_util': self.curr_io_util,
-            'curr_net_util': self.curr_net_util,
-            'slo_retainment': self.slo_retainment,
-            'rate_ratio': self.rate_ratio,
-            'percentages': self.percentages
-            }
+            state = self.env.new_reset()
+    
             ep_reward = 0
             
             for step in range(NUM_TIMESTEPS):
             # while not time_step.last():
-
                 cpu_limit = state['cpu_limit']
                 mem_limit = state['mem_limit']
                 llc_limit = state['llc_limit']
@@ -208,39 +178,8 @@ class DDPG:
                 self.actor.train()
                 
                 # step episode
-                # state, reward, done = self.env.new_step(cpu_action, mem_action, llc_action, io_action, net_action, ID)
+                state, reward, done = self.env.new_step(cpu_action, mem_action, llc_action, io_action, net_action, ID)
                 
-                curr_arrival_rate = random.randint(0, 1)
-                cpu_limit += cpu_action  # response.limit.cpu
-                mem_limit += mem_action # response.limit.memory
-                llc_limit += llc_action # response.limit.llc
-                io_limit += io_action # response.limit.io
-                net_limit += net_action # response.limit.network
-                curr_cpu_util = random.randint(0,1) # response.usage.cpu
-                curr_mem_util = random.randint(0,1) # response.usage.memory
-                curr_llc_util = random.randint(0,1) # response.usage.llc
-                curr_io_util = random.randint(0,1) # response.usage.io
-                curr_net_util = random.randint(0,1) # response.usage.network
-                slo_retainment = random.randint(0,1) # state.other.slo_retainment
-                rate_ratio = random.randint(1,3) # response.usage.rate
-                percentages = [random.randint(1,3),random.randint(1,3), random.randint(1,3)] #response.usage.percentages
-                reward = NUM_RESOURCES*self.slo_retainment + self.curr_cpu_util/self.cpu_limit + self.curr_mem_util/self.mem_limit + self.curr_llc_util/self.llc_limit + self.curr_io_util/self.io_limit + self.curr_net_util/self.net_limit
-                state = {
-                    'cpu_limit': cpu_limit,
-                    'mem_limit': mem_limit,
-                    'llc_limit': llc_limit,
-                    'io_limit': io_limit,
-                    'net_limit': net_limit,
-                    'curr_cpu_util': curr_cpu_util,
-                    'curr_mem_util': curr_mem_util,
-                    'curr_llc_util': curr_llc_util,
-                    'curr_io_util': curr_io_util,
-                    'curr_net_util': curr_net_util,
-                    'slo_retainment': slo_retainment,
-                    'curr_arrival_rate': curr_arrival_rate, # workload
-                    'rate_ratio': rate_ratio,               # workload
-                    'percentages': percentages              # workload
-                }
                 print('Reward: {}'.format(reward))
                 curr_arrival_rate = state['curr_arrival_rate']
                 cpu_limit = state['cpu_limit']

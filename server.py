@@ -1,4 +1,4 @@
-from neo4j import GraphDatabase
+# from neo4j import GraphDatabase
 
 from wsgiref import simple_server
 from concurrent import futures
@@ -11,62 +11,63 @@ import grpc
 import message_pb2
 import message_pb2_grpc
 import random
-from metrics.collector import collector
+# from metrics.collector import collector
 
 import actions
 
-REDIS_HOST=os.getenv('COLLECTOR_REDIS_HOST', '192.168.222.5')
-REDIS_PORT=int(os.getenv('COLLECTOR_REDIS_PORT', '6379'))
-PORT=int(os.getenv('COLLECTOR_PORT', '8787'))
-STATS_LEN=int(os.getenv('STATS_LEN', '1440'))
+# REDIS_HOST=os.getenv('COLLECTOR_REDIS_HOST', '192.168.222.5')
+# REDIS_PORT=int(os.getenv('COLLECTOR_REDIS_PORT', '6379'))
+# PORT=int(os.getenv('COLLECTOR_PORT', '8787'))
+# STATS_LEN=int(os.getenv('STATS_LEN', '1440'))
 
 NUM_WORKERS = 32
-# METRIC_SERVER = '10.2.2.0'
-# CADVISOR_API = '10.2.2.1'
-DATABASE = 'localhost:7687'
-USERNAME = 'neo4j'
-PASSWORD = 'GorgeousPassword'
+# # METRIC_SERVER = '10.2.2.0'
+# # CADVISOR_API = '10.2.2.1'
+# DATABASE = 'localhost:7687'
+# USERNAME = 'neo4j'
+# PASSWORD = 'GorgeousPassword'
 
-PATH_TO_CONTAINER_INFO = 'pods.csv'
+# PATH_TO_CONTAINER_INFO = 'pods.csv'
 
-def register_containers():
-    f = open(PATH_TO_CONTAINER_INFO, 'r')
-    lines = f.readlines()
+# def register_containers():
+#     f = open(PATH_TO_CONTAINER_INFO, 'r')
+#     lines = f.readlines()
 
-    db = {}
-    for line in lines:
-        l = line.strip().split(',')
-        db[l[0]] = l[1]
+#     db = {}
+#     for line in lines:
+#         l = line.strip().split(',')
+#         db[l[0]] = l[1]
     
-    return db
+#     return db
 
-def init_collector(collector_app):
-    httpd = simple_server.make_server('0.0.0.0', PORT, collector_app)
-    # TODO - Add stopping statements
-    httpd.serve_forever()
+# def init_collector(collector_app):
+#     httpd = simple_server.make_server('0.0.0.0', PORT, collector_app)
+#     # TODO - Add stopping statements
+#     httpd.serve_forever()
 
 class InteractionServicer(message_pb2_grpc.InteractionServicer):
     """Provides methods that implement functionality of route guide server."""
     def __init__(self):
+        a=1
         # BoltDriver with no encryption
-        self.driver = GraphDatabase.driver('bolt://'+DATABASE, auth=(USERNAME, PASSWORD)) # thread-safe
+        # self.driver = GraphDatabase.driver('bolt://'+DATABASE, auth=(USERNAME, PASSWORD)) # thread-safe
         # self.driver = GraphDatabase.driver('neo4j://'+DATABASE, auth=(USERNAME, PASSWORD))
         # self.container_map = register_containers()
-        self.collector = collector.CollectorApp()
-        try:
-            threading.Thread(target=init_collector, args=(self.collector.build_app())).start()
-        except:
-            print("Error: unable to start thread!")
+        # self.collector = collector.CollectorApp()
+        # try:
+        #     threading.Thread(target=init_collector, args=(self.collector.build_app())).start()
+        # except:
+        #     print("Error: unable to start thread!")
 
     # request: ComponentId
     # response: ToClientMessage
-    def GetState(self, request, context):
+    def GetState(self):
         # metrics_stat = self.collector.get_stat(request.id)
         # tracing_stat = self.read_tracing_stat(request.id)
         message = message_pb2.ToClientMessage()
-        message.name = request.name
-        message.node = request.node
-        message.id = request.id
+        # message.name = request.name
+        # message.node = request.node
+        # message.id = request.id
         message.usage.cpu = random.randint(1,3) # metrics_stat['cpu']
         message.usage.memory = random.randint(1,3)# metrics_stat['memory']
         message.usage.llc = random.randint(1,3) #metrics_stat['cache']
@@ -82,7 +83,7 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
     
     # request: ToServerMessage
     # response: ToClientMessage
-    def PerformAction(self, request, context):
+    def PerformAction(self):
         # if request.id in self.container_map:
             # execute action
             # actions.cpu(request.id, request.action.cpu, self.container_map[request.id].cores)
@@ -94,8 +95,8 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
             # metrics_stat = self.collector.get_stat(request.id)
             # tracing_stat = self.read_tracing_stat(request.id)
             message = message_pb2.ToClientMessage()
-            message.name = request.name
-            message.id = request.id
+            # message.name = request.name
+            # message.id = request.id
             message.usage.cpu = random.randint(1,3) # metrics_stat['cpu']
             message.usage.memory = random.randint(1,3) # metrics_stat['memory']
             message.usage.llc = random.randint(1,3) # metrics_stat['cache']
