@@ -36,7 +36,7 @@ EPSILON = 1.0
 EPSILON_DECAY = 1e-6
 
 NUM_ACTIONS = 15
-NUM_STATES = 5+2+3
+NUM_STATES = 5+2
 NUM_RESOURCES = 5
 ID = 'default'
 
@@ -127,14 +127,14 @@ class DDPG:
             # state = self.env.new_reset(ID)
             self.curr_arrival_rate = random.uniform(0.0, 1.0)
             self.cpu_limit = 1 # state.limit.cpu
-            self.mem_limit = 1 # state.limit.memory
-            self.llc_limit = 1 # state.limit.llc
-            self.io_limit = 1 # state.limit.io
+            # self.mem_limit = 1 # state.limit.memory
+            # self.llc_limit = 1 # state.limit.llc
+            # self.io_limit = 1 # state.limit.io
             self.net_limit = 1 # state.limit.network
             self.curr_cpu_util = random.randint(0,1) # state.usage.cpu
-            self.curr_mem_util = random.randint(0,1) # state.usage.memory
-            self.curr_llc_util = random.randint(0,1) # state.usage.llc
-            self.curr_io_util = random.randint(0,1) # state.usage.io
+            # self.curr_mem_util = random.randint(0,1) # state.usage.memory
+            # self.curr_llc_util = random.randint(0,1) # state.usage.llc
+            # self.curr_io_util = random.randint(0,1) # state.usage.io
             self.curr_net_util = random.randint(0,1) # state.usage.network
             self.slo_retainment = random.randint(0,1) # state.other.slo_retainment
             self.rate_ratio = random.randint(1,3) # state.other.rate_ratio
@@ -142,14 +142,8 @@ class DDPG:
             state = {
             'curr_arrival_rate': self.curr_arrival_rate,
             'cpu_limit': self.cpu_limit,
-            'mem_limit': self.mem_limit,
-            'llc_limit': self.llc_limit,
-            'io_limit': self.io_limit,
             'net_limit': self.net_limit,
             'curr_cpu_util': self.curr_cpu_util,
-            'curr_mem_util': self.curr_mem_util,
-            'curr_llc_util': self.curr_llc_util,
-            'curr_io_util': self.curr_io_util,
             'curr_net_util': self.curr_net_util,
             'slo_retainment': self.slo_retainment,
             'rate_ratio': self.rate_ratio,
@@ -159,16 +153,9 @@ class DDPG:
             
             for step in range(NUM_TIMESTEPS):
             # while not time_step.last():
-
-                cpu_limit = state['cpu_limit']
-                mem_limit = state['mem_limit']
-                llc_limit = state['llc_limit']
-                io_limit = state['io_limit']
+                cpu_limit = state['cpu_limit']            
                 net_limit = state['net_limit']
                 curr_cpu_util = state['curr_cpu_util']
-                curr_mem_util = state['curr_mem_util']
-                curr_llc_util = state['curr_llc_util']
-                curr_io_util = state['curr_io_util']
                 curr_net_util = state['curr_net_util']
                 curr_arrival_rate = state['curr_arrival_rate']
                 slo_retainment = state['slo_retainment']
@@ -179,31 +166,22 @@ class DDPG:
                 if episode == NUM_EPISODES-1:
                     print("EP:", episode, " | Step:", step)
                     print("Update - Current SLO Retainment:", slo_retainment)
-                    print("Update - Current Util:", str(curr_cpu_util)+'/'+str(cpu_limit), str(curr_mem_util)+'/'+str(mem_limit), str(curr_llc_util)+'/'+str(llc_limit), str(curr_io_util)+'/'+str(io_limit), str(curr_net_util)+'/'+str(net_limit))
+                    print("Update - Current Util:", str(curr_cpu_util)+'/'+str(cpu_limit), str(curr_net_util)+'/'+str(net_limit))
 
                 # get maximizing action
-                currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_llc_util/llc_limit,curr_io_util/io_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]])) 
+                currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]])) 
                 self.actor.eval()     
                 action, actionToBuffer = self.getMaxAction(currStateTensor)
 
                 cpu_action = 0
                 if action < 3:
                     cpu_action = available_actions[action]
-                mem_action = 0
-                if action >= 3 and action < 6:
-                    mem_action = available_actions[action-3]
-                llc_action = 0
-                if action >= 6 and action < 9:
-                    llc_action = available_actions[action-6]
-                io_action = 0
-                if action >= 9 and action < 12:
-                    io_action = available_actions[action-9]
                 net_action = 0
                 if action >= 12:
                     net_action = available_actions[action-12]
 
                 if episode == NUM_EPISODES-1:
-                    print("Update - Actions to take:", cpu_action, mem_action, llc_action, io_action, net_action)
+                    print("Update - Actions to take:", cpu_action, net_action)
 
                 self.actor.train()
                 
@@ -212,29 +190,17 @@ class DDPG:
                 
                 curr_arrival_rate = random.randint(0, 1)
                 cpu_limit += cpu_action  # response.limit.cpu
-                mem_limit += mem_action # response.limit.memory
-                llc_limit += llc_action # response.limit.llc
-                io_limit += io_action # response.limit.io
                 net_limit += net_action # response.limit.network
                 curr_cpu_util = random.randint(0,1) # response.usage.cpu
-                curr_mem_util = random.randint(0,1) # response.usage.memory
-                curr_llc_util = random.randint(0,1) # response.usage.llc
-                curr_io_util = random.randint(0,1) # response.usage.io
                 curr_net_util = random.randint(0,1) # response.usage.network
                 slo_retainment = random.randint(0,1) # state.other.slo_retainment
                 rate_ratio = random.randint(1,3) # response.usage.rate
                 percentages = [random.randint(1,3),random.randint(1,3), random.randint(1,3)] #response.usage.percentages
-                reward = NUM_RESOURCES*self.slo_retainment + self.curr_cpu_util/self.cpu_limit + self.curr_mem_util/self.mem_limit + self.curr_llc_util/self.llc_limit + self.curr_io_util/self.io_limit + self.curr_net_util/self.net_limit
+                reward = NUM_RESOURCES*self.slo_retainment + self.curr_cpu_util/self.cpu_limit + self.curr_net_util/self.net_limit
                 state = {
                     'cpu_limit': cpu_limit,
-                    'mem_limit': mem_limit,
-                    'llc_limit': llc_limit,
-                    'io_limit': io_limit,
                     'net_limit': net_limit,
                     'curr_cpu_util': curr_cpu_util,
-                    'curr_mem_util': curr_mem_util,
-                    'curr_llc_util': curr_llc_util,
-                    'curr_io_util': curr_io_util,
                     'curr_net_util': curr_net_util,
                     'slo_retainment': slo_retainment,
                     'curr_arrival_rate': curr_arrival_rate, # workload
@@ -244,20 +210,14 @@ class DDPG:
                 print('Reward: {}'.format(reward))
                 curr_arrival_rate = state['curr_arrival_rate']
                 cpu_limit = state['cpu_limit']
-                mem_limit = state['mem_limit']
-                llc_limit = state['llc_limit']
-                io_limit = state['io_limit']
                 net_limit = state['net_limit']
                 curr_cpu_util = state['curr_cpu_util']
-                curr_mem_util = state['curr_mem_util']
-                curr_llc_util = state['curr_llc_util']
-                curr_io_util = state['curr_io_util']
                 curr_net_util = state['curr_net_util']
                 slo_retainment = state['slo_retainment']
                 rate_ratio = state['rate_ratio']
                 percentages = state['percentages']                
                 
-                nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_llc_util/llc_limit,curr_io_util/io_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]]))
+                nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]]))
                 ep_reward += reward
                 done = random.randint(0,3)
                 # Update replay bufer
