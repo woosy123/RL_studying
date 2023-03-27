@@ -10,7 +10,7 @@ import threading
 import grpc
 import message_pb2
 import message_pb2_grpc
-
+import random
 from metrics.collector import collector
 
 import actions
@@ -51,7 +51,7 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
         # BoltDriver with no encryption
         self.driver = GraphDatabase.driver('bolt://'+DATABASE, auth=(USERNAME, PASSWORD)) # thread-safe
         # self.driver = GraphDatabase.driver('neo4j://'+DATABASE, auth=(USERNAME, PASSWORD))
-        self.container_map = register_containers()
+        # self.container_map = register_containers()
         self.collector = collector.CollectorApp()
         try:
             threading.Thread(target=init_collector, args=(self.collector.build_app())).start()
@@ -61,51 +61,51 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
     # request: ComponentId
     # response: ToClientMessage
     def GetState(self, request, context):
-        metrics_stat = self.collector.get_stat(request.id)
-        tracing_stat = self.read_tracing_stat(request.id)
+        # metrics_stat = self.collector.get_stat(request.id)
+        # tracing_stat = self.read_tracing_stat(request.id)
         message = message_pb2.ToClientMessage()
         message.name = request.name
         message.node = request.node
         message.id = request.id
-        message.usage.cpu = metrics_stat['cpu']
-        message.usage.memory = metrics_stat['memory']
-        message.usage.llc = metrics_stat['cache']
-        message.usage.network = metrics_stat['network']
-        message.usage.io = metrics_stat['diskio']
+        message.usage.cpu = random.randint(1,3) # metrics_stat['cpu']
+        message.usage.memory = random.randint(1,3)# metrics_stat['memory']
+        message.usage.llc = random.randint(1,3) #metrics_stat['cache']
+        message.usage.network = random.randint(1,3) # metrics_stat['network']
+        message.usage.io = random.randint(1,3) # metrics_stat['diskio']
         message.limit = None;
-        message.other['slo_retainment'] = tracing_stat['slo_retainment'];
-        message.other['curr_arrival_rate'] = tracing_stat['curr_arrival_rate'];
-        message.other['rate_ratio'] = tracing_stat['rate_ratio'];
-        message.other['percentages'] = tracing_stat['percentages'];
+        message.other['slo_retainment'] = random.randint(1,3) # tracing_stat['slo_retainment'];
+        message.other['curr_arrival_rate'] = random.randint(1,3) #tracing_stat['curr_arrival_rate'];
+        message.other['rate_ratio'] = random.randint(1,3) # tracing_stat['rate_ratio'];
+        message.other['percentages'] = [random.randint(1,3), random.randint(1,3), random.randint(1,3)] # tracing_stat['percentages'];
         message.status = 'OK';
         return message
     
     # request: ToServerMessage
     # response: ToClientMessage
     def PerformAction(self, request, context):
-        if request.id in self.container_map:
+        # if request.id in self.container_map:
             # execute action
-            actions.cpu(request.id, request.action.cpu, self.container_map[request.id].cores)
-            actions.memory(request.id, request.action.memory, self.container_map[request.id].cores)
-            actions.llc(request.id, request.action.llc)
-            actions.blkio(request.id, request.action.io)
-            actions.network(request.id, request.action.network)
+            # actions.cpu(request.id, request.action.cpu, self.container_map[request.id].cores)
+            # actions.memory(request.id, request.action.memory, self.container_map[request.id].cores)
+            # actions.llc(request.id, request.action.llc)
+            # actions.blkio(request.id, request.action.io)
+            # actions.network(request.id, request.action.network)
             # response
-            metrics_stat = self.collector.get_stat(request.id)
-            tracing_stat = self.read_tracing_stat(request.id)
+            # metrics_stat = self.collector.get_stat(request.id)
+            # tracing_stat = self.read_tracing_stat(request.id)
             message = message_pb2.ToClientMessage()
             message.name = request.name
             message.id = request.id
-            message.usage.cpu = metrics_stat['cpu']
-            message.usage.memory = metrics_stat['memory']
-            message.usage.llc = metrics_stat['cache']
-            message.usage.network = metrics_stat['network']
-            message.usage.io = metrics_stat['diskio']
+            message.usage.cpu = random.randint(1,3) # metrics_stat['cpu']
+            message.usage.memory = random.randint(1,3) # metrics_stat['memory']
+            message.usage.llc = random.randint(1,3) # metrics_stat['cache']
+            message.usage.network = random.randint(1,3) # metrics_stat['network']
+            message.usage.io = random.randint(1,3) # metrics_stat['diskio']
             message.limit = None;
-            message.other['slo_retainment'] = tracing_stat['slo_retainment'];
-            message.other['curr_arrival_rate'] = tracing_stat['curr_arrival_rate'];
-            message.other['rate_ratio'] = tracing_stat['rate_ratio'];
-            message.other['percentages'] = tracing_stat['percentages'];
+            message.other['slo_retainment'] = random.randint(1,3) # tracing_stat['slo_retainment'];
+            message.other['curr_arrival_rate'] = random.randint(1,3) # tracing_stat['curr_arrival_rate'];
+            message.other['rate_ratio'] = random.randint(1,3) # tracing_stat['rate_ratio'];
+            message.other['percentages'] = [random.randint(1,3), random.randint(1,3), random.randint(1,3)] # tracing_stat['percentages'];
             message.status = 'OK';
             return message
 

@@ -103,7 +103,7 @@ class Environment():
             'curr_llc_util': self.curr_llc_util,
             'curr_io_util': self.curr_io_util,
             'curr_net_util': self.curr_net_util,
-            'slo_retainment': slo_retainment,
+            'slo_retainment': self.slo_retainment,
             'curr_arrival_rate': self.curr_arrival_rate, # workload
             'rate_ratio': self.rate_ratio,               # workload
             'percentages': self.percentages              # workload

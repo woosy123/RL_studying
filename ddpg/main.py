@@ -6,7 +6,7 @@ import sys
 
 sys.path.append("..")
 
-from client import Environment
+# from client import Environment
 from ddpg import DDPG
 
 # change this to the location of the checkpoint file
@@ -14,10 +14,10 @@ from ddpg import DDPG
 
 if __name__=="__main__":
     # environment for getting states and peforming actions
-    env = Environment()
+    # env = Environment()
 
     # init ddpg agent
-    agent = DDPG(env)
+    agent = DDPG()
     
     # init from saved checkpoints
     # agent.loadCheckpoint(CHECKPOINT_FILE)
