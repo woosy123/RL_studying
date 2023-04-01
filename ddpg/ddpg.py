@@ -124,7 +124,7 @@ class DDPG:
         avg_rewards = []
         # for each episode 
         for episode in range(self.start, self.end):
-            state = self.env.new_reset()
+            state = self.env.new_reset(ID)
     
             ep_reward = 0
             

@@ -10,19 +10,19 @@ class Environment():
         self.channel = grpc.insecure_channel('localhost:50051')
         self.stub = message_pb2_grpc.InteractionStub(self.channel)
 
-    def get_state(self):
-        state = self.stub.GetState()
+    def get_state(self, component_id):
+        state = self.stub.GetState(component_id)
         
-        # if component_id.id != state.id:
-        #     print("Component ID doesn't match!")
-        #     return False, None
+        if component_id.id != state.id:
+            print("Component ID doesn't match!")
+            return False, None
 
-        # if not state.usage or not state.limit or not state.other:
-        #     print("Incomplete states received!")
-        #     return False, None
+        if not state.usage or not state.limit or not state.other:
+            print("Incomplete states received!")
+            return False, None
         return True, state
 
-    def perform_action(self, message):
+    def perform_action(self,message):
         if not message.id or not message.action:
             print("Incomplete action to send!")
             return (False, None)
@@ -32,8 +32,8 @@ class Environment():
             return (False, None)
         return (True, response)
 
-    def new_reset(self):
-        ret, state = self.get_state()
+    def new_reset(self, id):
+        ret, state = self.get_state(id)
         if ret == False:
             return
 
