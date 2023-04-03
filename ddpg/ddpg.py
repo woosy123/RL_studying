@@ -60,15 +60,15 @@ class DDPG:
         self.stateDim = NUM_STATES
         self.actionDim = NUM_ACTIONS
         if CUDA:
-            self.actor = Actor(self.env).cuda()
-            self.critic = Critic(self.env).cuda()
-            self.targetActor = deepcopy(Actor(self.env)).cuda()
-            self.targetCritic = deepcopy(Critic(self.env)).cuda()
+            self.actor = Actor(self.stateDim,self.actionDim).cuda()
+            self.critic = Critic(self.stateDim,self.actionDim).cuda()
+            self.targetActor = deepcopy(Actor(self.stateDim,self.actionDim)).cuda()
+            self.targetCritic = deepcopy(Critic(self.stateDim,self.actionDim)).cuda()
         else:
-            self.actor = Actor(self.env)
-            self.critic = Critic(self.env)
-            self.targetActor = deepcopy(Actor(self.env))
-            self.targetCritic = deepcopy(Critic(self.env))
+            self.actor = Actor(self.stateDim,self.actionDim)
+            self.critic = Critic(self.stateDim,self.actionDim)
+            self.targetActor = deepcopy(Actor(self.stateDim,self.actionDim))
+            self.targetCritic = deepcopy(Critic(self.stateDim,self.actionDim))
         self.actorOptim = optim.Adam(self.actor.parameters(), lr=ACTOR_LR)
         self.criticOptim = optim.Adam(self.critic.parameters(), lr=CRITIC_LR)
         self.criticLoss = nn.MSELoss()
