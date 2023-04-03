@@ -66,20 +66,25 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
         # metrics_stat = self.collector.get_stat(request.id)
         # tracing_stat = self.read_tracing_stat(request.id)
         message = message_pb2.ToClientMessage()
-        # message.name = request.name
-        # message.node = request.node
-        # message.id = request.id
+        message.name = 'aa'
+        message.node = 'bb'
+        message.id = 'cc'
         message.usage.cpu = random.randint(1,3) # metrics_stat['cpu']
         message.usage.memory = random.randint(1,3)# metrics_stat['memory']
         message.usage.llc = random.randint(1,3) #metrics_stat['cache']
         message.usage.network = random.randint(1,3) # metrics_stat['network']
         message.usage.io = random.randint(1,3) # metrics_stat['diskio']
-        message.limit = None;
-        message.other['slo_retainment'] = random.randint(1,3) # tracing_stat['slo_retainment'];
-        message.other['curr_arrival_rate'] = random.randint(1,3) #tracing_stat['curr_arrival_rate'];
-        message.other['rate_ratio'] = random.randint(1,3) # tracing_stat['rate_ratio'];
-        message.other['percentages'] = [random.randint(1,3), random.randint(1,3), random.randint(1,3)] # tracing_stat['percentages'];
-        message.status = 'OK';
+        message.limit.cpu = 1
+        message.limit.memory = 1
+        message.limit.llc = 1
+        message.limit.io = 1
+        message.limit.network = 1
+        message.other.slo_retainment = 1.1 # tracing_stat['slo_retainment'];
+        message.other.curr_arrival_rate = 1 # tracing_stat['curr_arrival_rate'];
+        message.other.rate_ratio = 1.1 # tracing_stat['rate_ratio'];
+        for i in range(0,3):
+            message.other.percentages.append(1.0) # tracing_stat['percentages'];
+        message.status = 'OK'
         return message
     
     # request: ToServerMessage
@@ -96,19 +101,24 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
             # metrics_stat = self.collector.get_stat(request.id)
             # tracing_stat = self.read_tracing_stat(request.id)
             message = message_pb2.ToClientMessage()
-            # message.name = request.name
-            # message.id = request.id
+            message.name = 'aa'
+            message.id = 'cc'
             message.usage.cpu = random.randint(1,3) # metrics_stat['cpu']
             message.usage.memory = random.randint(1,3) # metrics_stat['memory']
             message.usage.llc = random.randint(1,3) # metrics_stat['cache']
             message.usage.network = random.randint(1,3) # metrics_stat['network']
             message.usage.io = random.randint(1,3) # metrics_stat['diskio']
-            message.limit = None;
-            message.other['slo_retainment'] = random.randint(1,3) # tracing_stat['slo_retainment'];
-            message.other['curr_arrival_rate'] = random.randint(1,3) # tracing_stat['curr_arrival_rate'];
-            message.other['rate_ratio'] = random.randint(1,3) # tracing_stat['rate_ratio'];
-            message.other['percentages'] = [random.randint(1,3), random.randint(1,3), random.randint(1,3)] # tracing_stat['percentages'];
-            message.status = 'OK';
+            message.limit.cpu = 1
+            message.limit.memory = 1
+            message.limit.llc = 1
+            message.limit.io = 1
+            message.limit.network = 1
+            message.other.slo_retainment = 1.1 # tracing_stat['slo_retainment'];
+            message.other.curr_arrival_rate = 1 # tracing_stat['curr_arrival_rate'];
+            message.other.rate_ratio = 1.1 # tracing_stat['rate_ratio'] 
+            for i in range(0,3):
+                message.other.percentages.append(1.0) # tracing_stat['percentages'];
+            message.status = 'OK'
             return message
 
     def read_tracing_stat(id):

@@ -52,15 +52,23 @@ def obs2state(state_list):
     #        l2.append(sublist)
     return torch.FloatTensor(state_list).view(1, -1)
 
+CUDA = True
+
 class DDPG:
     def __init__(self, env):
         self.env = env
         self.stateDim = NUM_STATES
         self.actionDim = NUM_ACTIONS
-        self.actor = Actor(self.stateDim, self.actionDim)
-        self.critic = Critic(self.stateDim, self.actionDim)
-        self.targetActor = deepcopy(Actor(self.stateDim, self.actionDim))
-        self.targetCritic = deepcopy(Critic(self.stateDim, self.actionDim))
+        if CUDA:
+            self.actor = Actor(self.env).cuda()
+            self.critic = Critic(self.env).cuda()
+            self.targetActor = deepcopy(Actor(self.env)).cuda()
+            self.targetCritic = deepcopy(Critic(self.env)).cuda()
+        else:
+            self.actor = Actor(self.env)
+            self.critic = Critic(self.env)
+            self.targetActor = deepcopy(Actor(self.env))
+            self.targetCritic = deepcopy(Critic(self.env))
         self.actorOptim = optim.Adam(self.actor.parameters(), lr=ACTOR_LR)
         self.criticOptim = optim.Adam(self.critic.parameters(), lr=CRITIC_LR)
         self.criticLoss = nn.MSELoss()
@@ -80,16 +88,20 @@ class DDPG:
     # Target Q-value <- reward and bootstraped Q-value of next state via the target actor and target critic
     # Output: Batch of Q-value targets
     def getQTarget(self, nextStateBatch, rewardBatch, terminalBatch):       
-        targetBatch = torch.FloatTensor(rewardBatch)
+        if CUDA:
+            targetBatch = torch.FloatTensor(rewardBatch).cuda() 
+        else:
+            targetBatch = torch.FloatTensor(rewardBatch)
         nonFinalMask = torch.ByteTensor(tuple(map(lambda s: s != True, terminalBatch)))
         nextStateBatch = torch.cat(nextStateBatch)
         nextActionBatch = self.targetActor(nextStateBatch)
+        nextActionBatch.volatile = True
         qNext = self.targetCritic(nextStateBatch, nextActionBatch)  
         
         nonFinalMask = self.discount * nonFinalMask.type(torch.FloatTensor)
         targetBatch += nonFinalMask * qNext.squeeze().data
         
-        return Variable(targetBatch)
+        return Variable(targetBatch, volatile=False)
 
     # weighted average update of the target network and original network
     # Inputs: target actor(critic) and original actor(critic)
@@ -100,7 +112,10 @@ class DDPG:
     # Inputs: Current state of the episode
     # Output: the action which maximizes the Q-value of the current state-action pair
     def getMaxAction(self, curState):
-        noise = self.epsilon * Variable(torch.FloatTensor(self.noise()))
+        if CUDA:
+            noise = self.epsilon * Variable(torch.FloatTensor(self.noise()), volatile=True).cuda()
+        else:
+            noise = self.epsilon * Variable(torch.FloatTensor(self.noise()), volatile=True)
         action = self.actor(curState)
         actionNoise = action + noise
         
@@ -152,10 +167,15 @@ class DDPG:
                     print("Update - Current Util:", str(curr_cpu_util)+'/'+str(cpu_limit), str(curr_mem_util)+'/'+str(mem_limit), str(curr_llc_util)+'/'+str(llc_limit), str(curr_io_util)+'/'+str(io_limit), str(curr_net_util)+'/'+str(net_limit))
 
                 # get maximizing action
-                currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_llc_util/llc_limit,curr_io_util/io_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]])) 
+                if CUDA:
+                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_llc_util/llc_limit,curr_io_util/io_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]]), volatile=True).cuda()
+                else:
+                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_llc_util/llc_limit,curr_io_util/io_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]]), volatile=True) 
                 self.actor.eval()     
                 action, actionToBuffer = self.getMaxAction(currStateTensor)
-
+                currStateTensor.volatile = False
+                action.volatile = False
+                
                 cpu_action = 0
                 if action < 3:
                     cpu_action = available_actions[action]
@@ -196,7 +216,10 @@ class DDPG:
                 rate_ratio = state['rate_ratio']
                 percentages = state['percentages']                
                 
-                nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_llc_util/llc_limit,curr_io_util/io_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]]))
+                if CUDA:
+                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_llc_util/llc_limit,curr_io_util/io_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]]), volatile=True).cuda()
+                else:
+                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_llc_util/llc_limit,curr_io_util/io_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]]))
                 ep_reward += reward
                 done = random.randint(0,3)
                 # Update replay bufer

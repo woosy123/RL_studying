@@ -11,15 +11,16 @@ class Environment():
         self.stub = message_pb2_grpc.InteractionStub(self.channel)
 
     def get_state(self, component_id):
-        state = self.stub.GetState(component_id)
+    
+        state = self.stub.GetState(message_pb2.ComponentId(name ='aa',node='bb',id='cc'))
         
-        if component_id.id != state.id:
-            print("Component ID doesn't match!")
-            return False, None
+        # if component_id.id != state.id:
+        #     print("Component ID doesn't match!")
+        #     return False, None
 
-        if not state.usage or not state.limit or not state.other:
-            print("Incomplete states received!")
-            return False, None
+        # if not state.usage or not state.limit or not state.other:
+        #     print("Incomplete states received!")
+        #     return False, None
         return True, state
 
     def perform_action(self,message):
@@ -75,7 +76,7 @@ class Environment():
         ret, response = self.perform_action(msg)
         if ret == False:
             return
-        self.slo_retainment = response.other_slo_retainment
+        self.slo_retainment = response.other.slo_retainment
         self.curr_arrival_rate = response.other.curr_arrival_rate
         self.cpu_limit += cpu_action  # response.limit.cpu
         self.mem_limit += mem_action # response.limit.memory
@@ -109,5 +110,5 @@ class Environment():
             'rate_ratio': self.rate_ratio,               # workload
             'percentages': self.percentages              # workload
         }
-
+        done = 1
         return state, reward, done
