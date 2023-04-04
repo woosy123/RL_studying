@@ -13,25 +13,44 @@ HID_LAYER1 = 40
 HID_LAYER2 = 40
 WFINAL = 0.003
 
+CUDA = False
+
 class Actor(nn.Module):
     def __init__(self, stateDim, actionDim):
         super(Actor, self).__init__()
         self.stateDim = stateDim
         self.actionDim = actionDim
         
-        self.norm0 = nn.BatchNorm1d(self.stateDim)
+        
+        if CUDA:
+            self.norm0 = nn.BatchNorm1d(self.stateDim).cuda()
                                     
-        self.fc1 = nn.Linear(self.stateDim, HID_LAYER1)
-        self.fc1.weight.data = fanin_init(self.fc1.weight.data.size())            
-        self.bn1 = nn.BatchNorm1d(HID_LAYER1)
+            self.fc1 = nn.Linear(self.stateDim, HID_LAYER1).cuda()
+            self.fc1.weight.data = fanin_init(self.fc1.weight.data.size()).cuda()       
+            self.bn1 = nn.BatchNorm1d(HID_LAYER1).cuda()
                                     
-        self.fc2 = nn.Linear(HID_LAYER1, HID_LAYER2)
-        self.fc2.weight.data = fanin_init(self.fc2.weight.data.size())
+            self.fc2 = nn.Linear(HID_LAYER1, HID_LAYER2).cuda()
+            self.fc2.weight.data = fanin_init(self.fc2.weight.data.size()).cuda()            
                                     
-        self.bn2 = nn.BatchNorm1d(HID_LAYER2)
+            self.bn2 = nn.BatchNorm1d(HID_LAYER2).cuda()
                                     
-        self.fc3 = nn.Linear(HID_LAYER2, self.actionDim)
-        self.fc3.weight.data.uniform_(-WFINAL, WFINAL)
+            self.fc3 = nn.Linear(HID_LAYER2, self.actionDim).cuda()
+            self.fc3.weight.data.uniform_(-WFINAL, WFINAL).cuda()
+        else:
+            self.norm0 = nn.BatchNorm1d(self.stateDim)
+                                    
+            self.fc1 = nn.Linear(self.stateDim, HID_LAYER1)
+            self.fc1.weight.data = fanin_init(self.fc1.weight.data.size())       
+            self.bn1 = nn.BatchNorm1d(HID_LAYER1)
+                                    
+            self.fc2 = nn.Linear(HID_LAYER1, HID_LAYER2)
+            self.fc2.weight.data = fanin_init(self.fc2.weight.data.size())           
+                                    
+            self.bn2 = nn.BatchNorm1d(HID_LAYER2)
+                                    
+            self.fc3 = nn.Linear(HID_LAYER2, self.actionDim)
+            self.fc3.weight.data.uniform_(-WFINAL, WFINAL)
+       # 돌아가는 지 확인해야함
         
         self.ReLU = nn.ReLU()
         self.Tanh = nn.Tanh()
@@ -52,16 +71,26 @@ class Critic(nn.Module):
         super(Critic, self).__init__()
         self.stateDim = stateDim
         self.actionDim = actionDim
+        if CUDA:
+            self.fc1 = nn.Linear(self.stateDim, HID_LAYER1).cuda()
+            self.fc1.weight.data = fanin_init(self.fc1.weight.data.size()).cuda()
         
-        self.fc1 = nn.Linear(self.stateDim, HID_LAYER1)
-        self.fc1.weight.data = fanin_init(self.fc1.weight.data.size())
+            self.bn1 = nn.BatchNorm1d(HID_LAYER1).cuda()
+            self.fc2 = nn.Linear(HID_LAYER1 + self.actionDim, HID_LAYER2).cuda()
+            self.fc2.weight.data = fanin_init(self.fc2.weight.data.size()).cuda()
         
-        self.bn1 = nn.BatchNorm1d(HID_LAYER1)
-        self.fc2 = nn.Linear(HID_LAYER1 + self.actionDim, HID_LAYER2)
-        self.fc2.weight.data = fanin_init(self.fc2.weight.data.size())
+            self.fc3 = nn.Linear(HID_LAYER2, 1).cuda()
+            self.fc3.weight.data.uniform_(-WFINAL, WFINAL).cuda()
+        else:
+            self.fc1 = nn.Linear(self.stateDim, HID_LAYER1)
+            self.fc1.weight.data = fanin_init(self.fc1.weight.data.size())
         
-        self.fc3 = nn.Linear(HID_LAYER2, 1)
-        self.fc3.weight.data.uniform_(-WFINAL, WFINAL)
+            self.bn1 = nn.BatchNorm1d(HID_LAYER1)
+            self.fc2 = nn.Linear(HID_LAYER1 + self.actionDim, HID_LAYER2)
+            self.fc2.weight.data = fanin_init(self.fc2.weight.data.size())
+        
+            self.fc3 = nn.Linear(HID_LAYER2, 1)
+            self.fc3.weight.data.uniform_(-WFINAL, WFINAL)
         
         self.ReLU = nn.ReLU()
         

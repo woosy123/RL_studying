@@ -52,10 +52,10 @@ class DDPG:
         self.stateDim = 5+2+3
         self.actionDim = 3*5
         if CUDA:
-            self.actor = Actor(self.env).cuda()
-            self.critic = Critic(self.env).cuda()
-            self.targetActor = deepcopy(Actor(self.env)).cuda()
-            self.targetCritic = deepcopy(Critic(self.env)).cuda()
+            self.actor = Actor(self.stateDim,self.actionDim).cuda()
+            self.critic = Critic(self.stateDim,self.actionDim).cuda()
+            self.targetActor = deepcopy(Actor(self.stateDim,self.actionDim)).cuda()
+            self.targetCritic = deepcopy(Critic(self.stateDim,self.actionDim)).cuda()
         else:
             self.actor = Actor(self.env)
             self.critic = Critic(self.env)

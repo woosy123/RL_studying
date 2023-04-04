@@ -62,7 +62,6 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
     # request: ComponentId
     # response: ToClientMessage
     def GetState(self, request, context):
-        print("id{}".format(request.id))
         # metrics_stat = self.collector.get_stat(request.id)
         # tracing_stat = self.read_tracing_stat(request.id)
         message = message_pb2.ToClientMessage()

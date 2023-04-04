@@ -52,7 +52,7 @@ def obs2state(state_list):
     #        l2.append(sublist)
     return torch.FloatTensor(state_list).view(1, -1)
 
-CUDA = True
+CUDA = False
 
 class DDPG:
     def __init__(self, env):
@@ -89,16 +89,21 @@ class DDPG:
     # Output: Batch of Q-value targets
     def getQTarget(self, nextStateBatch, rewardBatch, terminalBatch):       
         if CUDA:
-            targetBatch = torch.FloatTensor(rewardBatch).cuda() 
+            targetBatch = torch.FloatTensor(rewardBatch).cuda()
+            nonFinalMask = torch.ByteTensor(tuple(map(lambda s: s != True, terminalBatch))).cuda()
+            nextStateBatch = torch.cat(nextStateBatch).cuda()
         else:
             targetBatch = torch.FloatTensor(rewardBatch)
-        nonFinalMask = torch.ByteTensor(tuple(map(lambda s: s != True, terminalBatch)))
-        nextStateBatch = torch.cat(nextStateBatch)
+            nonFinalMask = torch.ByteTensor(tuple(map(lambda s: s != True, terminalBatch)))
+            nextStateBatch = torch.cat(nextStateBatch)
         nextActionBatch = self.targetActor(nextStateBatch)
         nextActionBatch.volatile = True
         qNext = self.targetCritic(nextStateBatch, nextActionBatch)  
-        
-        nonFinalMask = self.discount * nonFinalMask.type(torch.FloatTensor)
+        if CUDA:
+            nonFinalMask = self.discount * nonFinalMask.type(torch.cuda.FloatTensor)
+        else:
+            nonFinalMask = self.discount * nonFinalMask.type(torch.FloatTensor)
+
         targetBatch += nonFinalMask * qNext.squeeze().data
         
         return Variable(targetBatch, volatile=False)
@@ -174,7 +179,7 @@ class DDPG:
                 self.actor.eval()     
                 action, actionToBuffer = self.getMaxAction(currStateTensor)
                 currStateTensor.volatile = False
-                action.volatile = False
+                # action.volatile = False
                 
                 cpu_action = 0
                 if action < 3:

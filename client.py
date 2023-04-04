@@ -11,16 +11,16 @@ class Environment():
         self.stub = message_pb2_grpc.InteractionStub(self.channel)
 
     def get_state(self, component_id):
-    
-        state = self.stub.GetState(message_pb2.ComponentId(name ='aa',node='bb',id='cc'))
+        Component_Id = message_pb2.ComponentId(name ='aa',node='bb',id='cc')
+        state = self.stub.GetState(Component_Id)
         
-        # if component_id.id != state.id:
-        #     print("Component ID doesn't match!")
-        #     return False, None
+        if Component_Id.id != state.id:
+            print("Component ID doesn't match!")
+            return False, None
 
-        # if not state.usage or not state.limit or not state.other:
-        #     print("Incomplete states received!")
-        #     return False, None
+        if not state.usage or not state.limit or not state.other:
+            print("Incomplete states received!")
+            return False, None
         return True, state
 
     def perform_action(self,message):
