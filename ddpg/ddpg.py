@@ -36,8 +36,8 @@ EPSILON = 1.0
 EPSILON_DECAY = 1e-6
 
 NUM_ACTIONS = 15
-NUM_STATES = 5+2+3
-
+NUM_STATES = 3+2
+NUM_RESOURCES = 3
 ID = 'default'
 
 # converts observation dictionary to state tensor
@@ -52,15 +52,23 @@ def obs2state(state_list):
     #        l2.append(sublist)
     return torch.FloatTensor(state_list).view(1, -1)
 
+CUDA = False
+
 class DDPG:
     def __init__(self, env):
         self.env = env
         self.stateDim = NUM_STATES
         self.actionDim = NUM_ACTIONS
-        self.actor = Actor(self.stateDim, self.actionDim)
-        self.critic = Critic(self.stateDim, self.actionDim)
-        self.targetActor = deepcopy(Actor(self.stateDim, self.actionDim))
-        self.targetCritic = deepcopy(Critic(self.stateDim, self.actionDim))
+        if CUDA:
+            self.actor = Actor(self.stateDim,self.actionDim).cuda()
+            self.critic = Critic(self.stateDim,self.actionDim).cuda()
+            self.targetActor = deepcopy(Actor(self.stateDim,self.actionDim)).cuda()
+            self.targetCritic = deepcopy(Critic(self.stateDim,self.actionDim)).cuda()
+        else:
+            self.actor = Actor(self.stateDim,self.actionDim)
+            self.critic = Critic(self.stateDim,self.actionDim)
+            self.targetActor = deepcopy(Actor(self.stateDim,self.actionDim))
+            self.targetCritic = deepcopy(Critic(self.stateDim,self.actionDim))
         self.actorOptim = optim.Adam(self.actor.parameters(), lr=ACTOR_LR)
         self.criticOptim = optim.Adam(self.critic.parameters(), lr=CRITIC_LR)
         self.criticLoss = nn.MSELoss()
@@ -80,16 +88,20 @@ class DDPG:
     # Target Q-value <- reward and bootstraped Q-value of next state via the target actor and target critic
     # Output: Batch of Q-value targets
     def getQTarget(self, nextStateBatch, rewardBatch, terminalBatch):       
-        targetBatch = torch.FloatTensor(rewardBatch)
+        if CUDA:
+            targetBatch = torch.FloatTensor(rewardBatch).cuda() 
+        else:
+            targetBatch = torch.FloatTensor(rewardBatch)
         nonFinalMask = torch.ByteTensor(tuple(map(lambda s: s != True, terminalBatch)))
         nextStateBatch = torch.cat(nextStateBatch)
         nextActionBatch = self.targetActor(nextStateBatch)
+        nextActionBatch.volatile = True
         qNext = self.targetCritic(nextStateBatch, nextActionBatch)  
         
         nonFinalMask = self.discount * nonFinalMask.type(torch.FloatTensor)
         targetBatch += nonFinalMask * qNext.squeeze().data
         
-        return Variable(targetBatch)
+        return Variable(targetBatch, volatile=False)
 
     # weighted average update of the target network and original network
     # Inputs: target actor(critic) and original actor(critic)
@@ -100,7 +112,10 @@ class DDPG:
     # Inputs: Current state of the episode
     # Output: the action which maximizes the Q-value of the current state-action pair
     def getMaxAction(self, curState):
-        noise = self.epsilon * Variable(torch.FloatTensor(self.noise()))
+        if CUDA:
+            noise = self.epsilon * Variable(torch.FloatTensor(self.noise()), volatile=True).cuda()
+        else:
+            noise = self.epsilon * Variable(torch.FloatTensor(self.noise()), volatile=True)
         action = self.actor(curState)
         actionNoise = action + noise
         
@@ -118,87 +133,80 @@ class DDPG:
             
         print('Training started...')
         
-        action_step = 10
+        action_step = 5
         available_actions = [0, action_step, -action_step]
         all_rewards = []
         avg_rewards = []
         # for each episode 
         for episode in range(self.start, self.end):
             state = self.env.new_reset(ID)
-            
+    
             ep_reward = 0
             
             for step in range(NUM_TIMESTEPS):
             # while not time_step.last():
-                curr_arrival_rate = state['curr_arrival_rate']
                 cpu_limit = state['cpu_limit']
                 mem_limit = state['mem_limit']
-                llc_limit = state['llc_limit']
-                io_limit = state['io_limit']
                 net_limit = state['net_limit']
                 curr_cpu_util = state['curr_cpu_util']
                 curr_mem_util = state['curr_mem_util']
-                curr_llc_util = state['curr_llc_util']
-                curr_io_util = state['curr_io_util']
                 curr_net_util = state['curr_net_util']
+                curr_arrival_rate = state['curr_arrival_rate']
                 slo_retainment = state['slo_retainment']
                 rate_ratio = state['rate_ratio']
-                percentages = state['percentages']
 
                 # print each time step only at the last EPISODE
                 if episode == NUM_EPISODES-1:
                     print("EP:", episode, " | Step:", step)
                     print("Update - Current SLO Retainment:", slo_retainment)
-                    print("Update - Current Util:", str(curr_cpu_util)+'/'+str(cpu_limit), str(curr_mem_util)+'/'+str(mem_limit), str(curr_llc_util)+'/'+str(llc_limit), str(curr_io_util)+'/'+str(io_limit), str(curr_net_util)+'/'+str(net_limit))
+                    print("Update - Current Util:", str(curr_cpu_util)+'/'+str(cpu_limit), str(curr_mem_util)+'/'+str(mem_limit), str(curr_net_util)+'/'+str(net_limit))
 
                 # get maximizing action
-                currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_llc_util/llc_limit,curr_io_util/io_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]])) 
+                if CUDA:
+                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]), volatile=True).cuda()
+                else:
+                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]), volatile=True) 
                 self.actor.eval()     
                 action, actionToBuffer = self.getMaxAction(currStateTensor)
-
+                currStateTensor.volatile = False
+                # action.volatile = False
+                action = 4
                 cpu_action = 0
                 if action < 3:
                     cpu_action = available_actions[action]
                 mem_action = 0
                 if action >= 3 and action < 6:
                     mem_action = available_actions[action-3]
-                llc_action = 0
-                if action >= 6 and action < 9:
-                    llc_action = available_actions[action-6]
-                io_action = 0
-                if action >= 9 and action < 12:
-                    io_action = available_actions[action-9]
                 net_action = 0
                 if action >= 12:
                     net_action = available_actions[action-12]
 
                 if episode == NUM_EPISODES-1:
-                    print("Update - Actions to take:", cpu_action, mem_action, llc_action, io_action, net_action)
+                    print("Update - Actions to take:", cpu_action, mem_action, net_action)
 
                 self.actor.train()
                 
                 # step episode
-                state, reward, done = self.env.new_step(cpu_action, mem_action, llc_action, io_action, net_action, ID)
+                state, reward, done = self.env.new_step(cpu_action, mem_action, net_action, ID)
+                
                 print('Reward: {}'.format(reward))
                 curr_arrival_rate = state['curr_arrival_rate']
                 cpu_limit = state['cpu_limit']
                 mem_limit = state['mem_limit']
-                llc_limit = state['llc_limit']
-                io_limit = state['io_limit']
                 net_limit = state['net_limit']
                 curr_cpu_util = state['curr_cpu_util']
                 curr_mem_util = state['curr_mem_util']
-                curr_llc_util = state['curr_llc_util']
-                curr_io_util = state['curr_io_util']
                 curr_net_util = state['curr_net_util']
                 slo_retainment = state['slo_retainment']
-                rate_ratio = state['rate_ratio']
-                percentages = state['percentages']                
+                rate_ratio = state['rate_ratio']                
                 
-                nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_llc_util/llc_limit,curr_io_util/io_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,percentages[0],percentages[1],percentages[2]]))
+                if CUDA:
+                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]), volatile=True).cuda()
+                else:
+                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]))
                 ep_reward += reward
                 
-                # Update replay bufer
+                # Update replay buffer
                 self.replayBuffer.append((currStateTensor, actionToBuffer, nextState, reward, done))
                 
                 # Training loop
@@ -215,14 +223,14 @@ class DDPG:
                     self.criticOptim.zero_grad()
                     criticLoss = self.criticLoss(qPredBatch, qTargetBatch)
                     print('Critic Loss: {}'.format(criticLoss))
-                    criticLoss.backward(retain_graph=True)
+                    # criticLoss.backward(retain_graph=True)
                     self.criticOptim.step()
             
                     # Actor update
                     self.actorOptim.zero_grad()
                     actorLoss = -torch.mean(self.critic(curStateBatch, self.actor(curStateBatch)))
                     print('Actor Loss: {}'.format(actorLoss))
-                    actorLoss.backward(retain_graph=True)
+                    # actorLoss.backward(retain_graph=True)
                     self.actorOptim.step()
                     
                     # Update Targets                        

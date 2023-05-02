@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-sys.path.append("..")
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from client import Environment
+import client
 from ddpg import DDPG
 
 # change this to the location of the checkpoint file
@@ -14,7 +14,7 @@ from ddpg import DDPG
 
 if __name__=="__main__":
     # environment for getting states and peforming actions
-    env = Environment()
+    env = client.Environment()
 
     # init ddpg agent
     agent = DDPG(env)
