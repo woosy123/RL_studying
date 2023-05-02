@@ -10,7 +10,7 @@ NUM_COS_CAT = 4
 NUM_COS_MBA = 8
 NUM_NET_CLS = 16
 
-result_path = 'result.txt'
+result_path = '/home/gpu/Documents/result.txt'
 
 def cpu(id, value, period=100000):
     if value < 0:

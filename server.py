@@ -86,7 +86,7 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
 
     def stat_collector(self):
         stat={}
-        df = pd.read_csv("usage.txt", sep=' ',header=None, names=['val'])
+        df = pd.read_csv('/home/gpu/Documents/usage.txt', sep=' ',header=None, names=['val'])
         stat['cpu'] = float(df['val'][0])*100
         stat['memory'] = float(df['val'][1])/1000
         stat['network'] = float(df['val'][2])
@@ -95,7 +95,7 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
 
     def get_stat_of(self):
         stat = {}
-        result = pd.read_csv("metrics.txt",sep=' ',header=None, names=['val'])
+        result = pd.read_csv('/home/gpu/Documents/metrics.txt',sep=' ',header=None, names=['val'])
         stat['slo_retainment'] = float(result['val'][0][:5])
         stat['curr_arrival_rate'] = float(result['val'][1])/1000
         stat['rate_ratio'] = float(result['val'][2])

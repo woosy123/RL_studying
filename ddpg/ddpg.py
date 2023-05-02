@@ -23,8 +23,8 @@ PLOT_FIG = False
 ACTOR_LR = 0.0003
 CRITIC_LR = 0.003
 MINIBATCH_SIZE = 64
-NUM_EPISODES = 90
-NUM_TIMESTEPS = 3
+NUM_EPISODES = 9000
+NUM_TIMESTEPS = 300
 MU = 0
 SIGMA = 0.2
 CHECKPOINT_DIR = './checkpoints/manipulator/'
@@ -36,7 +36,7 @@ EPSILON = 1.0
 EPSILON_DECAY = 1e-6
 
 NUM_ACTIONS = 15
-NUM_STATES = 3+2+3
+NUM_STATES = 3+2
 NUM_RESOURCES = 3
 ID = 'default'
 
@@ -163,9 +163,9 @@ class DDPG:
 
                 # get maximizing action
                 if CUDA:
-                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,1,2,3]), volatile=True).cuda()
+                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]), volatile=True).cuda()
                 else:
-                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,1,2,3]), volatile=True) 
+                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]), volatile=True) 
                 self.actor.eval()     
                 action, actionToBuffer = self.getMaxAction(currStateTensor)
                 currStateTensor.volatile = False
@@ -201,9 +201,9 @@ class DDPG:
                 rate_ratio = state['rate_ratio']                
                 
                 if CUDA:
-                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,1,2,3]), volatile=True).cuda()
+                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]), volatile=True).cuda()
                 else:
-                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,1,2,3]))
+                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]))
                 ep_reward += reward
                 
                 # Update replay buffer
