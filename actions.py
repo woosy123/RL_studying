@@ -10,17 +10,14 @@ NUM_COS_CAT = 4
 NUM_COS_MBA = 8
 NUM_NET_CLS = 16
 
-
-metrics_path = 'metrics.txt'
-metrics = pd.read_csv(metrics_path, sep=' ',header=None, names=['val'])
-
 result_path = 'result.txt'
 
 def cpu(id, value, period=100000):
     if value < 0:
         raise ValueError('Invalid Value!')
-    
-    original = float(metrics['val'][0][:5])   
+    metrics_path = 'usage.txt'
+    usage = pd.read_csv(metrics_path, sep=' ',header=None, names=['val'])    
+    original = float(usage['val'][0])*100   
     curr_value = str(int(original) + int(value))
             
     with open(result_path, "r+") as f:
@@ -36,7 +33,7 @@ def memory(id, value, cores = 4):
     
     with open(result_path, "r+") as f:
         data = f.read()
-        f.write(str(value)) # + ' '.join(cores)
+        f.write(str(value)) # + ' '.join(cores) ???
         f.write('\n')
         f.truncate()
 

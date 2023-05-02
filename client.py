@@ -75,6 +75,7 @@ class Environment():
         self.curr_arrival_rate = response.other.curr_arrival_rate
         self.cpu_limit += cpu_action  # response.limit.cpu
         self.mem_limit += mem_action # response.limit.memory
+        print(self.mem_limit)
         self.net_limit += net_action # response.limit.network
         self.curr_cpu_util = response.usage.cpu
         self.curr_mem_util = response.usage.memory

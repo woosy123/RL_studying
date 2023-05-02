@@ -11,7 +11,7 @@ import grpc
 import message_pb2
 import message_pb2_grpc
 import random
-# from metrics.collector import collector
+
 
 import actions
 
@@ -45,7 +45,7 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
         message.limit.io = 0
         message.limit.network = 1
         message.other.slo_retainment = tracing_stat['slo_retainment']
-        message.other.curr_arrival_rate = tracing_stat['curr_arrival_rate']
+        message.other.curr_arrival_rate = int(tracing_stat['curr_arrival_rate'])
         message.other.rate_ratio = tracing_stat['rate_ratio'];
         for i in range(0,3):
             message.other.percentages.append(1.0) # tracing_stat['percentages'];
@@ -77,7 +77,7 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
             message.limit.io = 0
             message.limit.network = 1
             message.other.slo_retainment = tracing_stat['slo_retainment']
-            message.other.curr_arrival_rate = tracing_stat['curr_arrival_rate']
+            message.other.curr_arrival_rate = int(tracing_stat['curr_arrival_rate'])
             message.other.rate_ratio = tracing_stat['rate_ratio'] 
             for i in range(0,3):
                 message.other.percentages.append(1.0) # tracing_stat['percentages'];
@@ -86,19 +86,18 @@ class InteractionServicer(message_pb2_grpc.InteractionServicer):
 
     def stat_collector(self):
         stat={}
-        df = pd.read_csv("metrics.txt", sep=' ',header=None, names=['val'])
-        df = df.apply(pd.to_numeric, errors='ignore')
-        stat['cpu'] = float(df['val'][0][:5])
-        stat['memory'] = float(df['val'][1])
+        df = pd.read_csv("usage.txt", sep=' ',header=None, names=['val'])
+        stat['cpu'] = float(df['val'][0])*100
+        stat['memory'] = float(df['val'][1])/1000
         stat['network'] = float(df['val'][2])
         return stat
 
 
     def get_stat_of(self):
         stat = {}
-        result = pd.read_csv("usage.txt",sep=' ',header=None, names=['val'])
-        stat['slo_retainment'] = float(result['val'][0])
-        stat['curr_arrival_rate'] = int(result['val'][1])
+        result = pd.read_csv("metrics.txt",sep=' ',header=None, names=['val'])
+        stat['slo_retainment'] = float(result['val'][0][:5])
+        stat['curr_arrival_rate'] = float(result['val'][1])/1000
         stat['rate_ratio'] = float(result['val'][2])
         return stat
 

@@ -36,7 +36,7 @@ EPSILON = 1.0
 EPSILON_DECAY = 1e-6
 
 NUM_ACTIONS = 15
-NUM_STATES = 3+2
+NUM_STATES = 3+2+3
 NUM_RESOURCES = 3
 ID = 'default'
 
@@ -133,7 +133,7 @@ class DDPG:
             
         print('Training started...')
         
-        action_step = 10
+        action_step = 5
         available_actions = [0, action_step, -action_step]
         all_rewards = []
         avg_rewards = []
@@ -163,14 +163,14 @@ class DDPG:
 
                 # get maximizing action
                 if CUDA:
-                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]), volatile=True).cuda()
+                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,1,2,3]), volatile=True).cuda()
                 else:
-                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]), volatile=True) 
+                    currStateTensor = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,1,2,3]), volatile=True) 
                 self.actor.eval()     
                 action, actionToBuffer = self.getMaxAction(currStateTensor)
                 currStateTensor.volatile = False
                 # action.volatile = False
-                
+                action = 4
                 cpu_action = 0
                 if action < 3:
                     cpu_action = available_actions[action]
@@ -182,7 +182,7 @@ class DDPG:
                     net_action = available_actions[action-12]
 
                 if episode == NUM_EPISODES-1:
-                    print("Update - Actions to take:", cpu_action, mem_action,net_action)
+                    print("Update - Actions to take:", cpu_action, mem_action, net_action)
 
                 self.actor.train()
                 
@@ -201,9 +201,9 @@ class DDPG:
                 rate_ratio = state['rate_ratio']                
                 
                 if CUDA:
-                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]), volatile=True).cuda()
+                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,1,2,3]), volatile=True).cuda()
                 else:
-                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio]))
+                    nextState = Variable(obs2state([curr_cpu_util/cpu_limit,curr_mem_util/mem_limit,curr_net_util/net_limit,slo_retainment,rate_ratio,1,2,3]))
                 ep_reward += reward
                 
                 # Update replay buffer
